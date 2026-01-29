@@ -21,6 +21,36 @@ class NovaHandler(http.server.SimpleHTTPRequestHandler):
                 data = json.loads(post_data.decode('utf-8'))
                 code = data.get('code', '')
 
+                # 1. Input Validation
+                if not code or not code.strip():
+                     response_data = {
+                        'success': False,
+                        'stdout': '',
+                        'stderr': 'No code entered',
+                        'asm': ''
+                    }
+                     self._send_json_response(response_data)
+                     return
+
+                # 2. Check for Compiler Executable
+                if not os.path.exists('nova.exe'):
+                     response_data = {
+                        'success': False,
+                        'stdout': '',
+                        'stderr': 'Internal Error: Compiler executable (nova.exe) not found. Please build the project.',
+                        'asm': ''
+                    }
+                     self._send_json_response(500, response_data)
+                     return
+
+                # 3. Clean up Stale Output
+                asm_file = 'output.asm'
+                if os.path.exists(asm_file):
+                    try:
+                        os.remove(asm_file)
+                    except Exception as e:
+                        print(f"Warning: Could not remove stale output.asm: {e}")
+
                 # Write temp file in the ROOT directory (not public)
                 temp_file_path = 'temp.no'
                 with open(temp_file_path, 'w') as f:
@@ -43,7 +73,6 @@ class NovaHandler(http.server.SimpleHTTPRequestHandler):
                 stdout, stderr = process.communicate(input=code)
                 
                 asm_content = ""
-                asm_file = 'output.asm'
                 
                 if os.path.exists(asm_file):
                     try:
@@ -51,7 +80,8 @@ class NovaHandler(http.server.SimpleHTTPRequestHandler):
                             asm_content = f.read()
                     except Exception as e:
                         asm_content = f"Error reading output.asm: {e}"
-
+                # If stderr is present, it might be a compilation error, but we still check for asm content if generated
+                
                 response_data = {
                     'success': True,
                     'stdout': stdout,
@@ -59,25 +89,31 @@ class NovaHandler(http.server.SimpleHTTPRequestHandler):
                     'asm': asm_content
                 }
                 
-                response_bytes = json.dumps(response_data).encode('utf-8')
-
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                self.wfile.write(response_bytes)
+                self._send_json_response(response_data)
 
             except Exception as e:
-                err_resp = json.dumps({'stderr': str(e), 'stdout': '', 'asm': ''}).encode('utf-8')
-                self.send_response(500)
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                self.wfile.write(err_resp)
+                err_resp = {'stderr': str(e), 'stdout': '', 'asm': ''}
+                self._send_json_response(500, err_resp)
         else:
             self.send_error(404)
 
-print(f"Starting server at http://localhost:{PORT}")
-try:
-    with socketserver.TCPServer(("", PORT), NovaHandler) as httpd:
-        httpd.serve_forever()
-except KeyboardInterrupt:
-    print("\nServer stopped.")
+    def _send_json_response(self, status_code=200, data=None):
+        if data is None:
+            # If called as (data)
+            data = status_code
+            status_code = 200
+        
+        response_bytes = json.dumps(data).encode('utf-8')
+        self.send_response(status_code)
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+        self.wfile.write(response_bytes)
+
+
+if __name__ == '__main__':
+    print(f"Starting server at http://localhost:{PORT}")
+    try:
+        with socketserver.TCPServer(("", PORT), NovaHandler) as httpd:
+            httpd.serve_forever()
+    except KeyboardInterrupt:
+        print("\nServer stopped.")

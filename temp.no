@@ -1,0 +1,13 @@
+let a=2 + 3
+print a
+
+print "Hello Nova"
+
+for i = 1 to 5 
+[
+    print i]
+
+if a > 3 [
+    print "Greater"
+] 
+else [print "Smaller"]
