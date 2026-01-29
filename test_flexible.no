@@ -1,0 +1,31 @@
+$ Test Case 1: Standard newlines
+for i = 0 to 7
+[
+    print 7
+]
+
+$ Test Case 2: One line
+for i = 0 to 7 [print 7]
+
+$ Test Case 3: Bracket on same line, newline after
+for i = 0 to 7 [
+    print 7]
+
+$ Test Case 4: Bracket on same line, newline after and before closing
+for i = 0 to 7 [
+    print 7
+]
+
+$ Test Case 5: If-else with various formatting
+if 1 > 0 
+[
+    print "If"
+]
+else [
+    print "Else"
+]
+
+if 1 > 0 [ print "If2" ] else 
+[ 
+    print "Else2" 
+]

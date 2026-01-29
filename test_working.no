@@ -1,0 +1,28 @@
+let a = 5
+print a
+
+for i = 0 to 7
+[
+    print i
+]
+
+for i = 0 to 7[
+    print i
+]
+
+if a > 3 [
+    print a
+]
+
+if a > 3
+[
+    print a
+]
+
+if a > 3 [
+    print "yes"
+] else [
+    print "no"
+]
+
+print "Success"
