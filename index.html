@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nova Compiler</title>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --text-color: #e0e0e0;
+            --accent-color: #007acc;
+            --secondary-bg: #252526;
+            --border-color: #3e3e42;
+            --success-color: #4caf50;
+            --error-color: #f44336;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: var(--accent-color);
+        }
+
+        main {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .editor-section,
+        .output-section {
+            background-color: var(--secondary-bg);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        h2,
+        h3 {
+            margin-top: 0;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 400px;
+
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 10px;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            box-sizing: border-box;
+            margin-bottom: 15px;
+        }
+
+        button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            align-self: flex-start;
+        }
+
+        button:hover {
+            background-color: #005f9e;
+        }
+
+        .status-box,
+        .asm-box {
+            margin-bottom: 20px;
+            flex-grow: 1;
+        }
+
+        pre {
+            background-color: #101010;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Courier New', monospace;
+            white-space: pre-wrap;
+            min-height: 100px;
+            border: 1px solid var(--border-color);
+        }
+
+        .status-box pre {
+            color: #9cdcfe;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .asm-box pre {
+            height: 350px;
+            overflow-y: auto;
+            color: #ce9178;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Nova Compiler</h1>
+        </header>
+
+        <main>
+            <div class="editor-section">
+                <h2>Source Code</h2>
+                <textarea id="sourceCode" placeholder="Enter your Nova code here..."></textarea>
+                <button id="compileBtn">Run Compilation</button>
+            </div>
+
+            <div class="output-section">
+                <div class="status-box">
+                    <h3>Compilation Status</h3>
+                    <pre id="statusOutput">Waiting for compilation...</pre>
+                </div>
+
+                <div class="asm-box">
+                    <h3>Generated Assembly</h3>
+                    <pre id="asmOutput"></pre>
+                </div>
+            </div>
+        </main>
+    </div>
+    <script>
+        document.getElementById('compileBtn').addEventListener('click', async () => {
+            const code = document.getElementById('sourceCode').value;
+            const statusOutput = document.getElementById('statusOutput');
+            const asmOutput = document.getElementById('asmOutput');
+
+            if (!code.trim()) {
+                statusOutput.textContent = "No Code Entered";
+                return;
+            }
+
+            statusOutput.textContent = "Compiling...";
+            asmOutput.textContent = "";
+
+            try {
+                const response = await fetch('/compile', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ code })
+                });
+
+                const result = await response.json();
+
+
+                let statusText = "";
+
+                if (result.stdout) {
+                    statusText += result.stdout;
+                }
+
+                if (result.stderr) {
+                    statusText += "\n--- Errors ---\n" + result.stderr;
+                }
+
+                if (!statusText.trim()) {
+                    statusText = "Compilation finished (No output)";
+                }
+
+                statusOutput.textContent = statusText;
+                asmOutput.textContent = result.asm || "";
+
+            } catch (error) {
+                console.error('Error:', error);
+                statusOutput.textContent = "Error connecting to server.";
+            }
+        });
+    </script>
+</body>
+
+</html>
